@@ -11,11 +11,13 @@ public class Habit {
     private String createTime;
     private int clockinDays;
     private boolean flag_auto;
+    private boolean flag_today;
+    private int insistDays;
 
     public Habit() {
     }
 
-    public Habit(int id, String userId, String name, int icon, int color, int category, int weekday, String createTime, int clockinDays, boolean flag_auto) {
+    public Habit(int id, String userId, String name, int icon, int color, int category, int weekday, String createTime, int clockinDays, boolean flag_auto, boolean flag_today, int insistDays) {
         this.id = id;
         this.userId = userId;
         this.name = name;
@@ -26,6 +28,8 @@ public class Habit {
         this.createTime = createTime;
         this.clockinDays = clockinDays;
         this.flag_auto = flag_auto;
+        this.flag_today = flag_today;
+        this.insistDays = insistDays;
     }
 
     public int getId() {
@@ -106,5 +110,22 @@ public class Habit {
 
     public void setFlag_auto(boolean flag_auto) {
         this.flag_auto = flag_auto;
+    }
+
+    public boolean isFlag_today() {
+        return flag_today;
+    }
+
+    public void setFlag_today(boolean flag_today) {
+        this.flag_today = flag_today;
+    }
+
+
+    public int getInsistDays() {
+        return insistDays;
+    }
+
+    public void setInsistDays(int insistDays) {
+        this.insistDays = insistDays;
     }
 }
