@@ -337,11 +337,6 @@ public class HabitDao {
                     habit.setWeekday(rs.getInt("weekday"));
                     habit.setCreateTime(rs.getString("create_time"));
                     habit.setClockinDays(rs.getInt("clockin_days"));
-                    RecordDao dao = new RecordDao();
-                    int days = dao.getInsistDays(habit.getId(), userId);
-                    habit.setInsistDays(days);
-                    boolean today = dao.isTodayClockIn(id, userId);
-                    habit.setFlag_today(today);
                 }
                 else {
                     habit = null;
