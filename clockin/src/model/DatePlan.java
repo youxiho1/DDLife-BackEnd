@@ -1,5 +1,6 @@
 package model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DatePlan {
@@ -7,6 +8,7 @@ public class DatePlan {
     private List<Plan> list;
 
     public DatePlan() {
+        list = new ArrayList<>();
     }
 
     public String getDate() {
@@ -24,4 +26,9 @@ public class DatePlan {
     public void setList(List<Plan> list) {
         this.list = list;
     }
+
+    public void addPlan(Plan plan) {
+        list.add(plan);
+    }
+
 }

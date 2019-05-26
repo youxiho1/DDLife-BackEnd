@@ -102,7 +102,7 @@ CREATE TABLE `clockin`.`Plan` (
 
 PlanDao测试情况
 
-addPlan updatePlan finish cancelFinish delay findTodayPlan findAllPlan hasPermission isFinish findById deletePlan
+addPlan√ updatePlan√ finish√ cancelFinish√ delay√ findTodayPlan√ findAllPlan√ hasPermission√ isFinish√ findById√ deletePlan√
 
 
 ## 接口设计
@@ -401,7 +401,23 @@ id，完成状态，deadline，图标，名字
 
 #### 添加计划&修改计划
 
-计划名字 具体内容 日期选择 图标选择
+请求内部逻辑：PlanDao-addPlan
+
+请求路径：/api/plan/updateHabit
+
+请求方法：post
+
+请求参数：
+
+| 名称     | 说明                                 | 数据类型 |
+| -------- | ------------------------------------ | -------- |
+| id       | 要修改的计划的id（id=0代表添加计划） | int      |
+| title    | 计划的标题                           | string   |
+| icon     | 计划的图标编号                       | int      |
+| desp     | 计划的描述                           | string   |
+| deadline | 计划的deadline（格式举例：20190709） | string   |
+
+
 
 #### 删除计划
 

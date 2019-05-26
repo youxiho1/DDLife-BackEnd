@@ -58,12 +58,15 @@ public class PlanDao {
         if(plan1 == null) {
             //状态码-8，该用户不存在id为这样的计划
             return -8;
-
         } else if(!(plan1.getDeadline().equals(plan.getDeadline()))) {
             //两者deadline不同
+            if(DateUtil.getDeltaDate(plan.getDeadline(), DateUtil.getNowDateTime("yyyyMMdd")) > 0) {
+                //不能把deadline调到过去
+                return -9;  //状态码-9，不能把deadline调整到过去
+            }
             Connection connection = null;
             PreparedStatement pst = null;
-            String sql = "update Plan set title = ?, icon = ?, desp = ?, deadline = ?, flag_finish = ?, finish_time = ? where id = ? and user_id = ?";
+            String sql = "update Plan set title = ?, icon = ?, desp = ?, deadline = ?, flag_finish = ?, finish_time = ?, create_time = ? where id = ? and user_id = ?";
             try {
                 connection = DatabaseUtil.getConnection();
                 connection.setAutoCommit(false);
@@ -74,8 +77,9 @@ public class PlanDao {
                 pst.setString(4, plan.getDeadline());
                 pst.setBoolean(5, false);
                 pst.setString(6, "");
-                pst.setInt(7, plan.getId());
-                pst.setString(8, plan.getUserId());
+                pst.setString(7, DateUtil.getNowDateTime(""));
+                pst.setInt(8, plan.getId());
+                pst.setString(9, plan.getUserId());
                 if(pst.executeUpdate() != 1) {
                     flag = -1;
                 }
@@ -297,7 +301,7 @@ public class PlanDao {
             connection.setAutoCommit(false);
             pst = connection.prepareStatement(sql);
             pst.setString(1, userId);
-            pst.setString(2, DateUtil.getNowDateTime(""));
+            pst.setString(2, DateUtil.getNowDateTime("yyyyMMdd"));
             rs = pst.executeQuery();
             Plan plan;
             while (rs.next()) {
@@ -350,7 +354,7 @@ public class PlanDao {
             rs = pst.executeQuery();
             DatePlan datePlan = new DatePlan();
             datePlan.setDate("init");
-            String front = "";
+            //String front = "";
             while (rs.next()) {
                 Plan plan = new Plan();
                 plan.setId(rs.getInt("id"));
@@ -361,37 +365,42 @@ public class PlanDao {
                 plan.setIcon(rs.getInt("icon"));
                 plan.setTitle(rs.getString("title"));
                 plan.setFlag_finish(rs.getBoolean("flag_finish"));
-                if(plan.getDeadline().equals(front)) {
+                if(plan.getDeadline().equals(datePlan.getDate())) {
                     //这一个计划和上一个计划的deadline是同一个天，应该属于同一个DatePlan
-                    datePlan.getList().add(plan);
+                    datePlan.addPlan(plan);
                 } else {
                     //这一个计划和上一个计划的deadline是不同的，应该新建一个DatePlan
                     if(!datePlan.getDate().equals("init")) {
                         unfinished.add(datePlan);
                     }
-                    front = datePlan.getDate();
                     datePlan = new DatePlan();
                     datePlan.setDate(plan.getDeadline());
-                    List<Plan> list = new ArrayList<>();
-                    datePlan.setList(list);
-                    datePlan.getList().add(plan);
+                    datePlan.addPlan(plan);
                 }
             }
-
-            //我觉得这个玩意绝对有盲点
-            if(unfinished.size() == 0 && !datePlan.getDate().equals("init")) {
-                unfinished.add(datePlan);
-            } else if(unfinished.size() > 0 && !datePlan.getDate().equals("init") && !unfinished.get(unfinished.size() - 1).getDate().equals(datePlan.getDate())) {
+            if(!datePlan.getDate().equals("init") && !unfinished.contains(datePlan)) {
+                //不能没查到东西，现在集合里面不能有（以免重新添加）
                 unfinished.add(datePlan);
             }
             connection.commit();
             connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+            e.printStackTrace();
+        }
+        allPlans.setUnfinished(unfinished);
+        try {
+            connection = DatabaseUtil.getConnection();
+            connection.setAutoCommit(false);
             pst = connection.prepareStatement(sql2);
             pst.setString(1, userId);
             rs = pst.executeQuery();
-            datePlan = new DatePlan();
+            DatePlan datePlan = new DatePlan();
             datePlan.setDate("init");
-            front = "";
             while (rs.next()) {
                 Plan plan = new Plan();
                 plan.setId(rs.getInt("id"));
@@ -402,26 +411,23 @@ public class PlanDao {
                 plan.setIcon(rs.getInt("icon"));
                 plan.setTitle(rs.getString("title"));
                 plan.setFlag_finish(rs.getBoolean("flag_finish"));
-                if(plan.getDeadline().equals(front)) {
+                if(plan.getDeadline().equals(datePlan.getDate())) {
                     //这一个计划和上一个计划的deadline是同一个天，应该属于同一个DatePlan
-                    datePlan.getList().add(plan);
+                    datePlan.addPlan(plan);
                 } else {
                     //这一个计划和上一个计划的deadline是不同的，应该新建一个DatePlan
                     if(!datePlan.getDate().equals("init")) {
                         finished.add(datePlan);
                     }
-                    front = datePlan.getDate();
                     datePlan = new DatePlan();
                     datePlan.setDate(plan.getDeadline());
-                    List<Plan> list = new ArrayList<>();
-                    datePlan.setList(list);
-                    datePlan.getList().add(plan);
+                    datePlan.addPlan(plan);
                 }
             }
-            if(!finished.get(finished.size() - 1).getDate().equals(datePlan.getDate())) {
+            if(!datePlan.getDate().equals("init") && !finished.contains(datePlan)) {
+                //不能没查到东西，现在集合里面不能有（以免重新添加）
                 finished.add(datePlan);
             }
-
             connection.commit();
             connection.setAutoCommit(true);
         } catch (SQLException e) {
@@ -433,7 +439,6 @@ public class PlanDao {
             e.printStackTrace();
         }
         allPlans.setFinished(finished);
-        allPlans.setUnfinished(unfinished);
         return allPlans;
     }
 
@@ -549,5 +554,110 @@ public class PlanDao {
             DatabaseUtil.close(rs, pst, connection);
         }
         return plan;
+    }
+
+    public static void main(String[] args) {
+        PlanDao dao = new PlanDao();
+        //AddPlan测试
+        /*Plan plan = new Plan();
+        plan.setUserId("user2");
+        plan.setIcon(1);
+        plan.setTitle("title");
+        plan.setDesp("");
+        plan.setDeadline(DateUtil.getNowDateTime("yyyyMMdd"));
+        dao.addPlan(plan);
+        dao.addPlan(plan);*/
+        //findTodayPlan测试(混合了delay的测试)
+        /*TodayPlans todayPlans = dao.findTodayPlan("user");
+        todayPlans = dao.findTodayPlan("user2");*/
+        //hasPermission测试
+        /*boolean flag = dao.hasPermission(2, "user2");
+        System.out.println(flag);
+        flag = dao.hasPermission(2, "user");
+        System.out.println(flag);*/
+        //deletePlan测试
+        /*boolean flag = dao.deletePlan(2, "user" );
+        System.out.println(flag);
+        flag = dao.deletePlan(3, "user2");
+        System.out.println(flag);
+        flag = dao.deletePlan(10, "user2");
+        System.out.println(flag);*/
+        //isFinish测试
+        /*boolean flag = dao.isFinish(2, "user");
+        System.out.println(flag);
+        flag = dao.isFinish(2, "user2");
+        System.out.println(flag);
+        flag = dao.isFinish(4, "user");
+        System.out.println(flag);
+        flag = dao.isFinish(4, "user2");
+        System.out.println(flag);*/
+        //findById测试
+        /*Plan plan = dao.findById(7, "user");
+        if(plan == null) {
+            System.out.println("NULL");
+        } else {
+            System.out.println(plan.getDeadline());
+        }
+        plan = dao.findById(2, "user");
+        if(plan == null) {
+            System.out.println("NULL");
+        } else {
+            System.out.println(plan.getDeadline());
+        }
+        plan = dao.findById(2, "user2");
+        if(plan == null) {
+            System.out.println("NULL");
+        } else {
+            System.out.println(plan.getDeadline());
+        }*/
+        //updatePlan测试
+        /*Plan plan = new Plan();
+        plan.setId(10);
+        plan.setUserId("user2");
+        plan.setIcon(999);
+        plan.setTitle("999");
+        plan.setDesp("999");
+        plan.setDeadline(DateUtil.getNowDateTime("yyyyMMdd"));
+        int result = dao.updatePlan(plan);
+        System.out.println(result);
+        plan.setId(4);
+        plan.setUserId("user");
+        result = dao.updatePlan(plan);
+        System.out.println(result);
+        plan.setUserId("user2");
+        plan.setDeadline("20170505");
+        result = dao.updatePlan(plan);
+        System.out.println(result);
+        plan.setDeadline("20170506");
+        result = dao.updatePlan(plan);
+        System.out.println(result);
+        plan.setDeadline("20200103");
+        result = dao.updatePlan(plan);
+        System.out.println(result);*/
+
+        //finish & cancelFinish测试
+        /*int result = dao.finish(4, "user2");
+        System.out.println(result);
+        result = dao.finish(3, "user2");
+        System.out.println(result);
+        result = dao.finish(2, "user2");
+        System.out.println(result);
+        result = dao.finish(5, "user");
+        System.out.println(result);
+        result = dao.finish(5, "user2");
+        System.out.println(result);*/
+        /*int result = dao.cancelFinish(4, "user2");
+        System.out.println(result);
+        result = dao.cancelFinish(3, "user2");
+        System.out.println(result);
+        result = dao.cancelFinish(2, "user2");
+        System.out.println(result);
+        result = dao.cancelFinish(5, "user");
+        System.out.println(result);
+        result = dao.cancelFinish(5, "user2");
+        System.out.println(result);*/
+        //findAllPlan测试
+        AllPlans allPlans = dao.findAllPlan("user2");
+        AllPlans allPlans1 = dao.findAllPlan("user");
     }
 }
