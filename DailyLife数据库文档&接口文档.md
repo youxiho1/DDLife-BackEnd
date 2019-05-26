@@ -107,6 +107,28 @@ addPlan√ updatePlan√ finish√ cancelFinish√ delay√ findTodayPlan√ fin
 
 ## 接口设计
 
+#### 状态码总述
+
+1 成功
+
+-1 数据库操作失败（在dao中出现了异常）
+
+-2 参数错误（get或post传过来的参数有问题）
+
+-3 身份信息校验错误（session中拿不到对应的token或解析出现问题）
+
+-4 未知错误（被最大的Exception所catch住了）
+
+-5 权限错误（这个id对应的东西不是你的），或操作与实际状态不符（如你已经点赞了还要点赞）
+
+-6 这不是今天该打卡的习惯或这不是今天该完成的计划
+
+-7 特殊状态码：打卡操作时当前不在打卡时间段内
+
+-8 不存在该id对应的计划或习惯（也有可能是因为这个id所对应的习惯或计划不是你的）
+
+-9 特殊状态码：修改deadline的时候不能把deadline修改到过去
+
 #### 登录
 
 现阶段登录未完成，但是你可以用(手动滑稽)
@@ -373,37 +395,130 @@ HabitDao-findAllHabitByUserId
 {"desp":"不存在该id对应的习惯","status":-8}
 ```
 
-#### 查询今日需要完成的计划
+#### 查询今日需要完成的计划√
 
 请求内部逻辑：PlanDao-findTodayPlan
 
-记得update之前过期的计划？
+请求路径：/api/plan/getplan?kind=1
 
-主关键字已完成未完成，第二关键字deadline，第三关键字创建时间
+请求方法：get
 
-id，完成状态，图标，名字，描述
+请求参数：无
 
-#### 查询全部计划
+返回值：共计两个JSON数组，分别是unfinished和finished
+
+每一个数组中是该分类下的计划，每一条计划的内容如下：
+
+| 名称        | 说明                                     | 数据类型 |
+| ----------- | ---------------------------------------- | -------- |
+| create_time | 该计划创建的时间                         | string   |
+| desp        | 该计划的描述                             | string   |
+| title       | 计划的标题                               | string   |
+| icon        | 计划的图标编号                           | int      |
+| deadline    | 计划的deadline（精确到天，格式20190709） | string   |
+| flag_finish | 该计划是否已经完成                       | bool     |
+| id          | 该计划的id                               | int      |
+| finish_time | 该计划完成的时间                         | string   |
+
+注：每个JSON数组内部按照按照创建时间排序
+
+查询成功的返回样例：
+
+```json
+{"finished":[{"desp":"","create_time":"20190526233732","icon":1,"id":5,"deadline":"20190527","title":"title","flag_finish":true,"finish_time":"20190527004526"}],"unfinished":[{"desp":"999","create_time":"20190526233732","icon":777,"id":9,"deadline":"20190527","title":"999","flag_finish":false,"finish_time":""}]}
+```
+
+查询失败的返回样例：
+
+```JSON
+{"desp":"身份信息校验错误","status":-3}
+```
+
+#### 查询全部计划√
 
 请求内部逻辑：PlanDao-findAllPlan
 
-记得update之前过期的计划？
+请求路径：/api/plan/getplan?kind=2
 
-主关键字已完成未完成，第二关键字deadline，第三关键字创建时间
+请求方法：get
 
-id，完成状态，deadline，图标，名字
+请求参数：无
 
-#### 完成计划&取消完成计划
+返回值：（以下内容说的简直不是人话：）共计两个Type A数组，分别是完成的和未完成的；每个Type A数组中的元素是一个日期加上一个Type B数组，每一个Type B数组中的元素是一个计划，其包含内容如下：
 
-计划id
+| 名称        | 说明                                     | 数据类型 |
+| ----------- | ---------------------------------------- | -------- |
+| create_time | 该计划创建的时间                         | string   |
+| desp        | 该计划的描述                             | string   |
+| title       | 计划的标题                               | string   |
+| icon        | 计划的图标编号                           | int      |
+| deadline    | 计划的deadline（精确到天，格式20190709） | string   |
+| flag_finish | 该计划是否已经完成                       | bool     |
+| id          | 该计划的id                               | int      |
+| finish_time | 该计划完成的时间                         | string   |
 
-状态码
+注：每个JSON数组内部按照按照创建时间排序
 
-#### 添加计划&修改计划
+查询成功的返回样例：
 
-请求内部逻辑：PlanDao-addPlan
+```json
+{"finished":[{"date":"20190527","list":[{"desp":"","create_time":"20190526233732","icon":1,"id":5,"deadline":"20190527","title":"title","flag_finish":true,"finish_time":"20190527004526"}]}],"unfinished":[{"date":"20200103","list":[{"desp":"999","create_time":"20190526233732","icon":999,"id":4,"deadline":"20200103","title":"999","flag_finish":false,"finish_time":""},{"desp":"999","create_time":"20190526233732","icon":888,"id":7,"deadline":"20200103","title":"999","flag_finish":false,"finish_time":""}]},{"date":"20190527","list":[{"desp":"999","create_time":"20190526233732","icon":777,"id":9,"deadline":"20190527","title":"999","flag_finish":false,"finish_time":""}]}]}
+```
 
-请求路径：/api/plan/updateHabit
+查询失败的返回样例：
+
+```JSON
+{"desp":"身份信息校验错误","status":-3}
+```
+
+#### 完成计划&取消完成计划√
+
+请求路径：/api/plan/finish
+
+请求方法：get
+
+完成计划请求内部逻辑：PlanDao-finish
+
+取消完成计划内部逻辑：PlanDao-cancelFinish
+
+请求参数：
+
+| 名称   | 说明                             | 数据类型 |
+| ------ | -------------------------------- | -------- |
+| kind   | 操作种类（打卡为1，取消打卡为0） | intpolan |
+| planId | 计划id                           | int      |
+
+返回：操作执行结果的状态码以及状态描述
+
+状态码约定：1成功，-1数据库操作失败，-2参数错误，-3身份校验错误，-4未知错误，-5完成状态与操作状态不符合（即今日没完成，要调用的操作却是取消完成，注：如果你要打卡的习惯是别人的，也会报状态码为-5），-6这不是今天该完成的计划，-8不存在该id对应的计划）
+
+返回样例：
+
+```json
+{"desp":"该id的计划不存在","status":-8}
+```
+
+```json
+{"desp":"该计划的deadline不是今天","status":-6}
+```
+
+```json
+{"desp":"权限错误或该计划已经完成","status":-5}
+```
+
+```json
+{"desp":"取消完成该习惯成功","status":1}
+```
+
+```json
+{"desp":"成功完成该习惯","status":1}
+```
+
+#### 添加计划&修改计划√
+
+请求内部逻辑：PlanDao-addPlan PlanDao-updatePlan
+
+请求路径：/api/plan/updateplan
 
 请求方法：post
 
@@ -417,19 +532,98 @@ id，完成状态，deadline，图标，名字
 | desp     | 计划的描述                           | string   |
 | deadline | 计划的deadline（格式举例：20190709） | string   |
 
+请求返回值：执行操作的状态
 
+状态码规定如下：
 
-#### 删除计划
+1成功，-1数据库操作失败，-2参数错误，-3身份校验错误，-4未知错误，-8该用户不存在id为这样的计划，-9不能把deadline调整到过去
 
-计划id
+返回样例：
 
-状态码
+```json
+{"desp":"添加习惯成功","status":1}
+```
 
-#### 查看计划详情
+```json
+{"desp":"该用户不存在id为这样的计划","status":-8}
+```
 
+```json
+{"desp":"修改习惯成功","status":1}
+```
 
+#### 删除计划√
 
+请求内部逻辑：PlanDao-deletePlan
 
+请求路径：/api/plan/deleteplan
+
+请求方法：get
+
+请求参数：
+
+| 名称   | 说明   | 数据类型 |
+| ------ | ------ | -------- |
+| planId | 计划id | int      |
+
+返回：操作执行结果的状态码以及状态描述
+
+状态码约定：1成功，-1数据库操作失败，-2参数错误，-3身份校验错误，-4未知错误
+
+返回样例：
+
+```json
+{"desp":"数据库操作失败","status":-1}
+```
+
+```json
+{"desp":"planId参数格式非法","status":-2}
+```
+
+```json
+{"desp":"删除成功","status":1}
+```
+
+#### 
+
+#### 查看计划详情√
+
+请求内部实现：PlanDao-findById
+
+请求路径：/api/plan/detail
+
+请求方法：get
+
+请求参数：
+
+| 名称 | 说明           | 数据类型 |
+| ---- | -------------- | -------- |
+| id   | 要查看计划的id | int      |
+
+返回计划的详情，一条计划的内容如下：
+
+| 名称        | 说明                                     | 数据类型 |
+| ----------- | ---------------------------------------- | -------- |
+| create_time | 该计划创建的时间                         | string   |
+| desp        | 该计划的描述                             | string   |
+| title       | 计划的标题                               | string   |
+| icon        | 计划的图标编号                           | int      |
+| deadline    | 计划的deadline（精确到天，格式20190709） | string   |
+| flag_finish | 该计划是否已经完成                       | bool     |
+| id          | 该计划的id                               | int      |
+| finish_time | 该计划完成的时间                         | string   |
+
+返回成功示例：
+
+```json
+{"desp":"999","create_time":"20190526233732","icon":999,"id":4,"deadline":"20200103","title":"999","flag_finish":false,"finish_time":""}
+```
+
+返回失败示例：
+
+```json
+{"desp":"不存在该id对应的计划","status":-8}
+```
 
 ————我是分割线啦——————
 
