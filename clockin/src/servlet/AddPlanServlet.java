@@ -13,6 +13,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLDecoder;
 
 @WebServlet("/api/plan/updateplan")
 public class AddPlanServlet extends HttpServlet {
@@ -53,6 +55,7 @@ public class AddPlanServlet extends HttpServlet {
                 return;
             }
             String title = req.getParameter("title");
+            title = URLDecoder.decode(title, "UTF-8");
             if(title == null || title.length() <= 0) {
                 result.setDesp("title参数格式错误");
                 result.setStatus(-2);
@@ -67,6 +70,7 @@ public class AddPlanServlet extends HttpServlet {
                 return;
             }
             String desp = req.getParameter("desp");
+            desp = URLDecoder.decode(desp, "UTF-8");
             if(desp != null && desp.length() >= 34) {
                 result.setStatus(-2);
                 result.setDesp("desp参数格式错误");

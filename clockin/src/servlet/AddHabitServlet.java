@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 @WebServlet("/api/habit/updatehabit")
 public class AddHabitServlet extends HttpServlet {
@@ -49,6 +51,7 @@ public class AddHabitServlet extends HttpServlet {
         try {
             id = Integer.parseInt(req.getParameter("id"));
             String name = req.getParameter("name");
+            name = URLDecoder.decode(name, "UTF-8");
             if(name == null || name.length() == 0) {
                 result.setStatus(-2);
                 result.setDesp("name参数格式非法");
