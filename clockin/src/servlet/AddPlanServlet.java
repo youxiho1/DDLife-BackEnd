@@ -55,7 +55,9 @@ public class AddPlanServlet extends HttpServlet {
                 return;
             }
             String title = req.getParameter("title");
+            System.out.println(title);
             title = URLDecoder.decode(title, "UTF-8");
+            System.out.println(title);
             if(title == null || title.length() <= 0) {
                 result.setDesp("title参数格式错误");
                 result.setStatus(-2);
@@ -63,7 +65,7 @@ public class AddPlanServlet extends HttpServlet {
                 return;
             }
             int icon = Integer.parseInt(req.getParameter("icon"));
-            if(icon <= 0) {
+            if(icon < 0) {
                 result.setDesp("icon参数格式错误");
                 result.setStatus(-2);
                 resp.getWriter().println(result.toJson());
