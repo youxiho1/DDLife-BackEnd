@@ -5,17 +5,15 @@ public class User {
     private String session;
     private String token;
     private String tokenTime;
-    private String privateKey;
 
     public User() {
     }
 
-    public User(String openId, String session, String token, String tokenTime, String privateKey) {
+    public User(String openId, String session, String token, String tokenTime) {
         this.openId = openId;
         this.session = session;
         this.token = token;
         this.tokenTime = tokenTime;
-        this.privateKey = privateKey;
     }
 
     public String getOpenId() {
@@ -48,13 +46,5 @@ public class User {
 
     public void setTokenTime(String tokenTime) {
         this.tokenTime = tokenTime;
-    }
-
-    public String getPrivateKey() {
-        return privateKey;
-    }
-
-    public void setPrivateKey(String privateKey) {
-        this.privateKey = privateKey;
     }
 }

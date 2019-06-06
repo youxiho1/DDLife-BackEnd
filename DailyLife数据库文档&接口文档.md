@@ -161,7 +161,7 @@ addPlan√ updatePlan√ finish√ cancelFinish√ delay√ findTodayPlan√ fin
 
 请求内部逻辑：HabitDao-findTodayHabit
 
-请求路径：/api/habit/getHabit?kind=1
+请求路径：/api/habit/gethabit?kind=1
 
 请求方法：get
 
@@ -201,7 +201,7 @@ addPlan√ updatePlan√ finish√ cancelFinish√ delay√ findTodayPlan√ fin
 
 HabitDao-findAllHabitByUserId
 
-请求路径：/api/habit/getHabit?kind=2
+请求路径：/api/habit/gethabit?kind=2
 
 请求方法：get
 

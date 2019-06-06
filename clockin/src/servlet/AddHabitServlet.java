@@ -29,10 +29,16 @@ public class AddHabitServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setCharacterEncoding("UTF-8");
         resp.setContentType("application/json;charset=UTF-8");
-        HttpSession session = req.getSession();
-        String token = (String) session.getAttribute("token");
-        String userId = UserUtil.token2userid(token);
         Result result = new Result();
+        String token = null;
+        token = req.getParameter("token");
+        if(token == null || token.length() == 0) {
+            result.setStatus(-3);
+            result.setDesp("身份信息校验错误");
+            resp.getWriter().println(result.toJson());
+            return;
+        }
+        String userId = UserUtil.token2userid(token);
         if(userId == null || userId.length() == 0) {
             result.setStatus(-3);
             result.setDesp("身份信息校验错误");
